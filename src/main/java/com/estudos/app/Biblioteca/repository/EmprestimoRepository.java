@@ -1,7 +1,7 @@
 package com.estudos.app.Biblioteca.repository;
 
 import com.estudos.app.Biblioteca.model.Emprestimo;
-import com.estudos.app.Biblioteca.model.Usuario;
+
 
 import java.util.List;
 import java.util.Optional;
