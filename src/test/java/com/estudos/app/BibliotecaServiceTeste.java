@@ -1,5 +1,6 @@
 package com.estudos.app;
 
+import com.estudos.app.Biblioteca.exception.BibliotecaException;
 import com.estudos.app.Biblioteca.model.Emprestimo;
 import com.estudos.app.Biblioteca.model.Livro;
 import com.estudos.app.Biblioteca.model.Status;
@@ -143,6 +144,83 @@ public class BibliotecaServiceTeste {
 
         Assertions.assertEquals(expectedEmprestimosAtivos.size(), emprestimosAtivos.size());
         Assertions.assertTrue(emprestimosAtivos.containsAll(expectedEmprestimosAtivos));
+    }
+
+    @Test
+    void verificarRealizarEmprestimo_LivroNaoEncontrado(){
+        String isbn = "1234";
+        String idUsuario = "321";
+
+        Mockito.when(livroRepository.acharPorIsbn(isbn)).thenReturn(Optional.empty());
+
+        BibliotecaException exception = Assertions.assertThrows(BibliotecaException.class, () -> {
+            bibliotecaService.realizarEmprestimo(isbn, idUsuario);
+        });
+        Assertions.assertEquals("Livro não encontrado!", exception.getMessage());
+    }
+
+    @Test
+    void verificarRealizarEmprestimo_UsuarioNaoEncontrado(){
+        String isbn = "1234";
+        String idUsuario = "321";
+        Livro livro = new Livro(isbn,"titulo 1", "autor 1", 2012);
+        livro.setDisponivel(true);
+
+        Mockito.when(livroRepository.acharPorIsbn(isbn)).thenReturn(Optional.of(livro));
+        Mockito.when(usuarioRepository.acharPorId(idUsuario)).thenReturn(Optional.empty());
+
+        BibliotecaException exception = Assertions.assertThrows(BibliotecaException.class, () -> {
+            bibliotecaService.realizarEmprestimo(isbn,idUsuario);
+        });
+        Assertions.assertEquals("Usuario não encontrado!", exception.getMessage());
+    }
+
+
+    @Test
+    void verificarRealizarEmprestimo_LivroIndisponivel(){
+        String isbn = "12345";
+        String idUsuario = "456422";
+        Livro livro = new Livro(isbn, "titulo 1", "autor 1", 2005);
+        Usuario usuario = new Usuario(idUsuario, "Matheus", "matheus@email.com");
+
+        livro.setDisponivel(false);
+
+
+        Mockito.when(livroRepository.acharPorIsbn(isbn)).thenReturn(Optional.of(livro));
+        Mockito.when(usuarioRepository.acharPorId(idUsuario)).thenReturn(Optional.of(usuario));
+
+        BibliotecaException exception = Assertions.assertThrows(BibliotecaException.class, () ->{
+            bibliotecaService.realizarEmprestimo(isbn, idUsuario);
+        });
+        Assertions.assertEquals("Livro não esta mais disponivel", exception.getMessage());
+    }
+
+    @Test
+    void verificarDevolverLivro_EmprestimoNaoEncontrado(){
+        String idEmprestimo = "987";
+
+        Mockito.when(emprestimoRepository.acharPorId(idEmprestimo)).thenReturn(Optional.empty());
+
+        BibliotecaException exception = Assertions.assertThrows(BibliotecaException.class, () -> {
+            bibliotecaService.devolverLivro(idEmprestimo);
+        });
+        Assertions.assertEquals("Empréstimo não encontrado!", exception.getMessage());
+    }
+
+    @Test
+    void verificarDevolverLivro_LivroJaDevolvido(){
+        String idEmprestimo = "987";
+        Livro livro = new Livro("4321", "titulo 1", "autor 1", 2005);
+        Usuario usuario = new Usuario("42233", "Matheus", "matheus@email.com");
+        Emprestimo emprestimo = new Emprestimo(idEmprestimo, livro, usuario);
+        emprestimo.setStatus(Status.DEVOLVIDO);
+
+        Mockito.when(emprestimoRepository.acharPorId(idEmprestimo)).thenReturn(Optional.of(emprestimo));
+
+        BibliotecaException exception = Assertions.assertThrows(BibliotecaException.class, () ->{
+            bibliotecaService.devolverLivro(idEmprestimo);
+        });
+        Assertions.assertEquals("Livro já foi devolvido", exception.getMessage());
     }
 }
 
